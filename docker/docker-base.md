@@ -197,8 +197,16 @@ docker run -it --network=none busybox
 2. 创建一个容器后容器内网络会把docker0作为网关
 ![img](network_bridge.jpg)
 
+一个新的网络接口veth7d54c89被挂到了docker0上，veth7d54c89就是新创建容器的虚拟网卡
 
 
+``` shell
+[root@localhost ~]# brctl show
+bridge name     bridge id               STP enabled     interfaces
+docker0         8000.0242588dcac4       no              veth7d54c89
+[root@localhost ~]# 
+
+```
 
 
 ### 自定义网络
@@ -214,3 +222,43 @@ Docker提供三种user-defined网络驱动：bridge、overlay和macvlan。overla
 docker daemon实现了一个内嵌的DNS server，使容器可以直接通过“容器名”通信，只要在启动时用 --name为容器命名就可以了
 #### joined容器
 joined容器非常特别，它可以使两个或多个容器共享一个网络栈，共享网卡和配置信息，joined容器之间可以通过127.0.0.1直接通信
+
+
+## docker 存储
+1. storage driver
+2. Data Volume
+
+### 数据共享
+#### bind mount
+
+第一种方法是将共享数据放在bind mount中，然后将其mount到多个容器。还是以httpd为例，不过这次的场景复杂些，我们要创建由三个httpd容器组成的Web server集群，它们使用相同的html文件
+参考下例
+![img](volume.jpeg)
+
+#### volume container
+简单描述就是专门创建一个为其他容器提供volume容器，提供的卷可以诉bind mount也可以是 docker managed volume
+
+流程如下 
+1. 创建一个用于共享存储的容器
+
+![img](create_volume_container.jpeg)
+
+2. --volumes-from
+![img](create_from_container.jpeg)
+
+创建后数据被共享
+
+#### data-packed volume container
+
+原理是通过add将文件加入到 volume的目录中
+
+参考dockerfile
+```
+FROM ubuntu
+ADD test/xxx /other/tools
+VOLUME /other/tools
+
+### Data volume生命周期
+
+
+```
